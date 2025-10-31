@@ -14,7 +14,7 @@ def get_longest_path(schedule):
     return longest
 
 
-def parse_trayectories(schedule):
+def parse_trajectories(schedule):
     longest = get_longest_path(schedule)
     trayect = np.zeros((len(schedule), longest), dtype=np.int32)
     action_map = {
@@ -42,21 +42,20 @@ def parse_trayectories(schedule):
     return trayect, np.array(startings)
 
 
-def parse_traject(path):
-    cases = os.listdir(path)
-    print("Parsing trayectories")
-    for i in range(len(cases)):
-        with open(os.path.join(path, rf"case_{i}\solution.yaml")) as states_file:
+def parse_traject(path, cases):
+    print("Parsing trajectories")
+    for i in range(cases):
+        with open(os.path.join(path, f"case_{i}", "solution.yaml")) as states_file:
             schedule = yaml.load(states_file, Loader=yaml.FullLoader)
 
         combined_schedule = {}
         combined_schedule.update(schedule["schedule"])
 
-        t, s = parse_trayectories(combined_schedule)
-        np.save(os.path.join(path, rf"case_{i}\trajectory.npy"), t)
+        t, s = parse_trajectories(combined_schedule)
+        np.save(os.path.join(path, f"case_{i}" , "trajectory.npy"), t)
         if i % 25 == 0:
-            print(f"Trajectoty -- [{i}/{len(cases)}]")
-    print(f"Trayectoty -- [{i}/{len(cases)}]")
+            print(f"Trajectory -- [{i}/{cases}]")
+    print(f"Trajectory -- [{i+1}/{cases}]")
 
 
 if __name__ == "__main__":
@@ -67,10 +66,10 @@ if __name__ == "__main__":
 
     # with open(args.schedule) as states_file:
     #     schedule = yaml.load(states_file, Loader=yaml.FullLoader)
-    path = rf"dataset\obs_test"
+    path = "dataset/obs_test"
     cases = 200
     config = {}
-    parse_traject(path)
+    parse_traject(path, cases)
 
     # total = 200
     # for i in range(0,total):
@@ -81,7 +80,7 @@ if __name__ == "__main__":
 
     #     combined_schedule = {}
     #     combined_schedule.update(schedule["schedule"])
-    #     t, s = parse_trayectories(combined_schedule)
+    #     t, s = parse_trajectories(combined_schedule)
     #     np.save(os.path.join(path,f"trajectory.npy"), t)
     #     if i%25 == 0:
     #         print(f"Trajectoty [{i}/{total}]")

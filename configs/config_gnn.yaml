@@ -1,4 +1,4 @@
-exp_name: 'trained_models\gnn_k3'
+exp_name: 'trained_models/gnn_k3'
 
 # CNN
 channels: [16, 16, 16]

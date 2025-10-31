@@ -1,7 +1,7 @@
 from dataset_gen import create_solutions
-from trayectory_parser import parse_traject
+from trajectory_parser import parse_traject
 from record import record_env
-
+import os
 
 if __name__ == "__main__":
     cases = 1000
@@ -14,10 +14,10 @@ if __name__ == "__main__":
         "board_size": [28, 28],
         "max_time": 32,
         "min_time": 9,  # min time the tray should go from start to goal
-        "path": rf"dataset\5_8_28\train",
+        "path": os.path.join(os.getcwd(), "data", "test"),
     }
 
     for path in [config["path"]]:
         create_solutions(path, cases, config)
-        parse_traject(path)
-        record_env(path, config)
+        parse_traject(path, cases)
+        record_env(path, cases, config)

@@ -60,7 +60,7 @@ class GCNLayer(nn.Module):
         """
         self.n_nodes = node_feats.shape[2]
         batch_size = node_feats.shape[0]
-        self.adj_matrix += torch.eye(self.n_nodes)
+        self.adj_matrix += torch.eye(self.n_nodes, device=self.adj_matrix.device)
         # Generating an empty D
         D_mod = torch.zeros_like(self.adj_matrix)
 

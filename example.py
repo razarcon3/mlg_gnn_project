@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     model = Network(config)
     model.to(config["device"])
-    model.load_state_dict(torch.load(rf"{exp_name}\model.pt"))
+    model.load_state_dict(torch.load(f"{exp_name}/model.pt"))
     model.eval()
     for episode in range(tests_episodes):
         obstacles = create_obstacles(config["board_size"], config["obstacles"])

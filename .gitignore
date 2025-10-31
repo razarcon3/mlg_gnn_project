@@ -7,4 +7,6 @@
 *other/
 *journal.md
 *testbed.py
+data
+.idea
 *.pyc

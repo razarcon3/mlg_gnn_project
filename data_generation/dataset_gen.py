@@ -98,7 +98,7 @@ def gen_input(dimensions: tuple[int, int], nb_obs: int, nb_agents: int) -> dict:
 
 def data_gen(input_dict, output_path):
 
-    os.makedirs(output_path)
+    os.makedirs(output_path, exist_ok=True)
     param = input_dict
     dimension = param["map"]["dimensions"]
     obstacles = param["map"]["obstacles"]
@@ -107,7 +107,7 @@ def data_gen(input_dict, output_path):
     env = Environment(dimension, agents, obstacles)
 
     # Searching
-    cbs = CBS(env, verbose=False)
+    cbs = CBS(env, verbose=True)
     solution = cbs.search()
     if not solution:
         print(" Solution not found")
@@ -127,21 +127,25 @@ def data_gen(input_dict, output_path):
 
 
 def create_solutions(path, num_cases, config):
-    cases_ready = len(os.listdir(path))
     print("Generating solutions")
-    for i in range(cases_ready + 1, num_cases):
+    for i in range(num_cases):
         if i % 25 == 0:
             print(f"Solution -- [{i}/{num_cases}]")
-        inpt = gen_input(
-            config["map_shape"], config["nb_obstacles"], config["nb_agents"]
-        )
-        data_gen(inpt, os.path.join(path, f"case_{i}"))
-    print(f"Cases stored in {path}")
+
+        case_name = f"case_{i}"
+
+        # if case folder does not exist or it's empty create the solution
+        if not os.path.exists(os.path.join(path, case_name)) or not os.listdir(os.path.join(path, case_name)):
+            inpt = gen_input(
+                config["map_shape"], config["nb_obstacles"], config["nb_agents"]
+            )
+            data_gen(inpt, os.path.join(path, f"case_{i}"))
+    print(f"All cases stored in {path}")
 
 
 if __name__ == "__main__":
 
-    path = rf"dataset\obs_test"
+    path = "dataset/obs_test"
     config = {
         "device": "cpu",
         "num_agents": 3,

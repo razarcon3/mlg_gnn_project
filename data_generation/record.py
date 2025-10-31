@@ -37,15 +37,15 @@ def make_env(pwd_path, config):
     return env
 
 
-def record_env(path, config):
-    cases = os.listdir(path)
-    t = np.zeros(len(cases))
+def record_env(path, cases, config):
+    t = np.zeros(cases)
 
-    for i in range(len(cases) - 1):
-        trayectory = np.load(
-            os.path.join(path, rf"case_{i}\trajectory.npy"), allow_pickle=True
+    trajectory = None
+    for i in range(cases):
+        trajectory = np.load(
+            os.path.join(path, f"case_{i}", "trajectory.npy"), allow_pickle=True
         )
-        t[i] = trayectory.shape[1]
+        t[i] = trajectory.shape[1]
 
     print(f"max steps {np.max(t)}")
     print(f"min steps {np.min(t)}")
@@ -58,48 +58,48 @@ def record_env(path, config):
     # mx = int(np.max(t))
     # print(f"Max step: {mx}")
     print("Recording states...")
-    for timestep in range(len(cases) - 1):
-        agent_nb = trayectory.shape[0]
-        env = make_env(os.path.join(path, rf"case_{timestep}"), config)
+    for timestep in range(cases):
+        agent_nb = trajectory.shape[0]
+        env = make_env(os.path.join(path, f"case_{timestep}"), config)
         # mx = env.min_time
-        trayectory = np.load(
-            os.path.join(path, rf"case_{timestep}\trajectory.npy"), allow_pickle=True
+        trajectory = np.load(
+            os.path.join(path, f"case_{timestep}", "trajectory.npy"), allow_pickle=True
         )
-        trayectory = trayectory[:, 1:]
+        trajectory = trajectory[:, 1:]
         recordings = np.zeros(
-            (trayectory.shape[1], agent_nb, 2, 5, 5)
+            (trajectory.shape[1], agent_nb, 2, 5, 5)
         )  # timestep, agents, channels of FOV, dimFOVx, dimFOVy
-        adj_record = np.zeros((trayectory.shape[1], agent_nb, agent_nb, agent_nb))
+        adj_record = np.zeros((trajectory.shape[1], agent_nb, agent_nb, agent_nb))
         assert (
             agent_nb == env.nb_agents
-        ), rf"Trayectory has {agent_nb} agents, env expects {env.nb_agents}"
-        # if trayectory.shape[1] < mx:
+        ), f"trajectory has {agent_nb} agents, env expects {env.nb_agents}"
+        # if trajectory.shape[1] < mx:
         #     continue
-        #     trayectory = np.pad(trayectory,[(0,0), (0, mx - trayectory.shape[1])], mode='constant')
+        #     trajectory = np.pad(trajectory,[(0,0), (0, mx - trajectory.shape[1])], mode='constant')
         obs = env.reset()
         emb = np.ones(env.nb_agents)
-        for i in range(trayectory.shape[1]):
+        for i in range(trajectory.shape[1]):
             recordings[i, :, :, :, :] = obs["fov"]
             adj_record[i, :, :, :] = obs["adj_matrix"]
 
-            actions = trayectory[:, i]
+            actions = trajectory[:, i]
             obs, _, _, _ = env.step(actions, emb)
 
         recordings[i, :, :, :, :] = obs["fov"]
         adj_record[i, :, :, :] = obs["adj_matrix"]
 
-        np.save(os.path.join(path, rf"case_{timestep}\states.npy"), recordings)
-        np.save(os.path.join(path, rf"case_{timestep}\gso.npy"), adj_record)
+        np.save(os.path.join(path, f"case_{timestep}", "states.npy"), recordings)
+        np.save(os.path.join(path, f"case_{timestep}", "gso.npy"), adj_record)
         np.save(
-            os.path.join(path, rf"case_{timestep}\trajectory_record.npy"), trayectory
+            os.path.join(path, f"case_{timestep}", "trajectory_record.npy"), trajectory
         )
         if timestep % 25 == 0:
-            print(f"Recorded -- [{timestep}/{len(cases)}]")
-    print(f"Recorded -- [{timestep}/{len(cases)}] --- completed")
+            print(f"Recorded -- [{timestep}/{cases}]")
+    print(f"Recorded -- [{timestep+1}/{cases}] --- completed")
 
 
 if __name__ == "__main__":
 
-    # total=200
+    total=200
     pwd_path = rf"dataset\5_7_16\test"
-    record_env(pwd_path)
+    record_env(pwd_path, total)
