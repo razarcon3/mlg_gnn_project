@@ -14,7 +14,7 @@ if __name__ == "__main__":
         "board_size": [28, 28],
         "max_time": 32,
         "min_time": 9,  # min time the tray should go from start to goal
-        "path": os.path.join(os.getcwd(), "data", "test"),
+        "path": os.path.join(os.getcwd(), "data", "train"),
     }
 
     for path in [config["path"]]:

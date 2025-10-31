@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from networks.utils_weights import weights_init
+from models.networks.utils_weights import weights_init
 import numpy as np
 from copy import copy
 

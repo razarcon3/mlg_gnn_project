@@ -1,8 +1,5 @@
 import sys
 
-sys.path.append(r"C:\Users\victo\Desktop\VU master\MLGP\Extra")
-sys.path.append(r"C:\Users\victo\Desktop\VU master\MLGP\Extra\models")
-
 import os
 import time
 import yaml
@@ -19,13 +16,12 @@ from grid.env_graph_gridv1 import GraphEnv, create_goals, create_obstacles
 from data_loader import GNNDataLoader
 
 
-with open(r"configs\config_gnn_test.yaml", "r") as config_path:
+with open(os.path.join(os.getcwd(), "configs", "config_gnn.yaml"), "r") as config_path:
     config = yaml.load(config_path, Loader=yaml.FullLoader)
 
 net_type = config["net_type"]
 exp_name = config["exp_name"]
 tests_episodes = config["tests_episodes"]
-config["device"] = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 if net_type == "baseline":
     from models.framework_baseline import Network
@@ -35,10 +31,10 @@ elif net_type == "gnn":
     from models.framework_gnn_message import Network
 
 
-if not os.path.exists(rf"results\{exp_name}"):
-    os.makedirs(rf"results\{exp_name}")
+if not os.path.exists(os.path.join("results", f"{exp_name}")):
+    os.makedirs(os.path.join("results", f"{exp_name}"))
 
-with open(rf"results\{exp_name}\config.yaml", "w") as config_path:
+with open(os.path.join("results", f"{exp_name}", "config.yaml"), "w") as config_path:
     yaml.dump(config, config_path)
 
 if __name__ == "__main__":
@@ -68,7 +64,7 @@ if __name__ == "__main__":
             gso = gso.to(config["device"])
             output = model(states, gso)
 
-            total_loss = torch.zeros(1, requires_grad=True)
+            total_loss = torch.zeros(1, requires_grad=True, device=config["device"])
             for agent in range(trajectories.shape[1]):
                 loss = criterion(output[:, agent, :], trajectories[:, agent].long())
                 total_loss = total_loss + (loss / trajectories.shape[1])
@@ -121,8 +117,9 @@ if __name__ == "__main__":
     success_rate = np.array(success_rate_final)
     flow_time = np.array(flow_time_final)
 
-    np.save(rf"results\{exp_name}\success_rate.npy", success_rate)
-    np.save(rf"results\{exp_name}\flow_time.npy", flow_time)
-    np.save(rf"results\{exp_name}\loss.npy", loss)
+    np.save(os.path.join("results", f"{exp_name}", "success_rate.npy"), success_rate)
+    np.save(os.path.join("results", f"{exp_name}", "flow_time.npy"), flow_time)
+    np.save(os.path.join("results", f"{exp_name}", "loss.npy"), loss)
 
-    torch.save(model.state_dict(), rf"results\{exp_name}\model.pt")
+
+    torch.save(model.state_dict(), os.path.join("results", f"{exp_name}", "model.pt"))

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     with open(args.config, "r") as config_path:
         config = yaml.load(config_path, Loader=yaml.FullLoader)
 
-    config["device"] = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    config["device"] = torch.device("cuda")
     exp_name = config["exp_name"]
     tests_episodes = config["tests_episodes"]
     net_type = config["net_type"]
@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     model = Network(config)
     model.to(config["device"])
-    model.load_state_dict(torch.load(f"{exp_name}/model.pt"))
+    # TODO remove results from this and pass in the experiment folder path to example.py
+    model.load_state_dict(torch.load(f"results/{exp_name}/model.pt"),strict=False)
     model.eval()
     for episode in range(tests_episodes):
         obstacles = create_obstacles(config["board_size"], config["obstacles"])

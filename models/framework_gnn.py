@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from networks.utils_weights import weights_init
-from networks.gnn import GCNLayer
+from models.networks.utils_weights import weights_init
+from models.networks.gnn import GCNLayer
 from copy import copy
 
 
