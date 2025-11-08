@@ -1,4 +1,6 @@
-exp_name: 'gnn_k3'
+exp_name: 'results/gnn_k3'
+
+device: "cpu"
 
 # CNN
 channels: [16, 16, 16]

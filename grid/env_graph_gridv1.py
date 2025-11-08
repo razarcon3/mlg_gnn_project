@@ -316,6 +316,8 @@ class GraphEnv(gym.Env):
 
     def render(self, agentId=0, printNeigh=False, printFOV=False, mode="plot"):
 
+        colors = plt.cm.tab10(np.linspace(0, 1, self.nb_agents))
+
         plt.axis("off")
         if agentId is not None:
             column = np.where(self.adj_matrix[agentId])
@@ -363,15 +365,36 @@ class GraphEnv(gym.Env):
                             )
 
         if mode == "plot":
-            plt.scatter(
-                self.positionX,
-                self.positionY,
-                s=150,
-                color=self.mapper.to_rgba(self.embedding),
-            )
-            plt.scatter(
-                self.goal[:, 0], self.goal[:, 1], color="blue", marker="*", s=150
-            )
+            
+            # plt.scatter(
+            #     self.positionX,
+            #     self.positionY,
+            #     s=150,
+            #     color=self.mapper.to_rgba(self.embedding),
+            # )
+            # plt.scatter(
+            #     self.goal[:, 0], self.goal[:, 1], color="blue", marker="*", s=150
+            # )
+
+            for i in range(self.nb_agents):
+                plt.scatter(
+                    self.positionX[i],
+                    self.positionY[i],
+                    s=150,
+                    color=colors[i],
+                    label=f"Agent {i}",
+                )
+                plt.scatter(
+                    self.goal[i, 0],
+                    self.goal[i, 1],
+                    color=colors[i],
+                    marker="*",
+                    s=200,
+                    edgecolor="black",
+                )
+            
+            plt.legend(loc="upper right")
+
             if self.obstacles is not None:
                 plt.scatter(
                     self.obstacles[:, 0],
