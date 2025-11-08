@@ -23,7 +23,7 @@ net_type: 'gnn'
 msg_type: 'gcn'
 # Simulation
 board_size: [18,18]
-map_shape: [5,5]
+map_shape: [5,5] # this is the FOV area size (local map)
 num_agents: 5
 obstacles: 5
 max_steps: 32
