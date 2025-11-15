@@ -3,6 +3,7 @@ import torch.nn as nn
 from models.networks.utils_weights import weights_init
 from models.networks.gnn import GCNLayer, MessagePassingLayer
 from copy import copy
+from torch_geometric.nn.models import GCN
 
 
 class Network(nn.Module):
@@ -91,24 +92,26 @@ class Network(nn.Module):
         # GNN
         ############################################################
 
-        self.nb_filter = len(self.graph_filter)  # Number of graph filtering layers
+        # self.nb_filter = len(self.graph_filter)  # Number of graph filtering layers
         self.features = [self.compress_Features_dim[-1]] + self.node_dim  # Features
-        # self.F = [numFeatureMap] + dimNodeSignals  # Features
-        self.graph_filter  # nFilterTaps # Filter taps
-        gcn = []
-        for l in range(self.nb_filter):
-            gcn.append(
-                MessagePassingLayer(
-                    self.num_agents,
-                    self.features[l],
-                    self.features[l + 1],
-                    self.graph_filter[l],
-                    activation=None,
-                )
-            )
-            gcn.append(nn.ReLU(inplace=True))
-        # And now feed them into the sequential
-        self.GFL = nn.Sequential(*gcn)  # Graph Filtering Layers
+        # # self.F = [numFeatureMap] + dimNodeSignals  # Features
+        # self.graph_filter  # nFilterTaps # Filter taps
+        # gcn = []
+        # for l in range(self.nb_filter):
+        #     gcn.append(
+        #         MessagePassingLayer(
+        #             self.num_agents,
+        #             self.features[l],
+        #             self.features[l + 1],
+        #             self.graph_filter[l],
+        #             activation=None,
+        #         )
+        #     )
+        #     gcn.append(nn.ReLU(inplace=True))
+        # # And now feed them into the sequential
+        # self.GFL = nn.Sequential(*gcn)  # Graph Filtering Layers
+        #
+        self.GFL = GCN(in_channels=self.features[0], hidden_channels=self.node_dim[0], out_channels=self.node_dim[0], num_layers=self.graph_filter[0])
 
         ############################################################
         # MLP Action
@@ -126,7 +129,7 @@ class Network(nn.Module):
                 mlp_action.append(nn.Linear(action_features[l], action_features[l + 1]))
 
         self.actionMLP = nn.Sequential(*mlp_action)
-        self.apply(weights_init)
+        # self.apply(weights_init)
 
     def forward(self, states, gso):
         """
@@ -146,10 +149,20 @@ class Network(nn.Module):
             encoded_feats_flat = encoded_feats.view(encoded_feats.size(0), -1)
             feature_vector[:, :, id_agent] = encoded_feats_flat  # B x F x N
 
-        for layer in range(self.nb_filter):
-            self.GFL[layer * 2].addGSO(gso)
+        # for layer in range(self.nb_filter):
+        #     self.GFL[layer * 2].addGSO(gso)
+        #
+        # features_shared = self.GFL(feature_vector)  # B x F x N
 
-        features_shared = self.GFL(feature_vector)  # B x F x N
+        edge_index = []
+
+        B = gso.shape[0]
+        for i in range(B):
+            # (i, from, to): edges for graph i
+            edges = gso[i].nonzero(as_tuple=False).t().contiguous()
+            edge_index.append(edges)
+
+        features_shared = self.GFL(feature_vector, edge_index)
 
         action_logits = torch.zeros(batch_size, self.num_agents, self.num_actions).to(
             self.config["device"]

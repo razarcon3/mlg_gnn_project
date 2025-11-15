@@ -1,11 +1,11 @@
 from typing import Any
 
-import torch
-import torch.nn.functional as F
-from torch import nn
-from torch_geometric.nn import GCNConv, MessagePassing
 
-class VanillaGCN(MessagePassing):
+from torch import nn
+from torch_geometric.nn.models import GCN
+
+
+class VanillaGCN(nn.Module):
     def __init__(self, config):
         super(VanillaGCN, self).__init__()
         self.config = config  # json file
@@ -14,11 +14,13 @@ class VanillaGCN(MessagePassing):
         self.map_shape = self.config["map_shape"]  # FOV
         self.num_actions = 5
 
-        self.dim_encoder_mlp = self.config["encoder_layers"]
-        self.compress_features_dim = self.config["encoder_dims"]  # Check
+        self.encoder_mlp_layers = self.config["encoder_layers"]
+        self.encoder_output_dim = self.config["encoder_dims"][0]  # Check
+        self.cnn_output_dim = self.config["last_convs"][0]
 
-        self.graph_filter = self.config["graph_filters"]
-        self.node_dim = self.config["node_dims"]
+
+        self.graph_filters = self.config["graph_filters"][0]
+        self.node_dim = self.config["node_dims"][0]
 
         dim_action_mlp = self.config["action_layers"]
 
@@ -27,6 +29,15 @@ class VanillaGCN(MessagePassing):
         # Initialize Feature Encoder (CNN + MLP)
         self.feature_encoder = None
         self._init_encoder()
+
+        # Initialize GCN
+        self.GCN = GCN(in_channels=self.encoder_output_dim, num_layers=self.graph_filters, out_channels=self.node_dim, hidden_channels=self.node_dim).to(config["device"])
+
+        # Initialize action decoder
+        self.action_decoder = nn.Sequential(
+            nn.Linear(self.node_dim, self.num_actions),
+            nn.ReLU(),
+        ).to(config["device"])
 
     def _init_encoder(self):
         self.conv_dim_W = [self.map_shape[0]]
@@ -57,16 +68,10 @@ class VanillaGCN(MessagePassing):
             self.conv_dim_W.append(int((self.map_shape[1] - filter_taps[l] + 2 * padding_size[l]) / strides[l]) + 1)
             self.conv_dim_H.append(int((self.map_shape[0] - filter_taps[l] + 2 * padding_size[l]) / strides[l]) + 1)
 
-        self.compress_features_dim = (
-                self.config["last_convs"] + self.compress_features_dim
-        )
-
         mlp_encoder = []
-        for l in range(self.dim_encoder_mlp):
+        for l in range(self.encoder_mlp_layers):
             mlp_encoder.append(
-                nn.Linear(
-                    self.compress_features_dim[l], self.compress_features_dim[l + 1]
-                )
+                nn.Linear(self.cnn_output_dim, self.encoder_output_dim)
             )
             mlp_encoder.append(nn.ReLU(inplace=True))
 
@@ -77,14 +82,11 @@ class VanillaGCN(MessagePassing):
             nn.Flatten()
         ).to(self.config["device"])
 
-    def forward(self, states, gso):
-        batch_size = states.shape[0]
-        # This vector is only needed for the GNN
-        feature_vector = torch.zeros(
-            batch_size, self.compress_features_dim[-1], self.num_agents
-        ).to(self.config["device"])
-        for id_agent in range(self.num_agents):
-            agent_state = states[:, id_agent, :, :, :]
-            feature_vector[:, :, id_agent] = self.feature_encoder(agent_state.to(self.config["device"]))  # B x F x N
+    def forward(self, data):
+        state, edge_index = data.state, data.edge_index
+        feature_vector = self.feature_encoder(state.to(self.config["device"])) # Agents (batched), encoder output dim
 
+        shared_features = self.GCN(feature_vector, edge_index.to(self.config["device"]))
 
+        action_logits = self.action_decoder(shared_features)
+        return action_logits

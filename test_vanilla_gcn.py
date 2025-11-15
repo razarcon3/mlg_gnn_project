@@ -1,7 +1,8 @@
 import argparse
 import yaml
-from data_loader import GNNDataLoader
+from dataset import GNNDataset
 from models.vanilla_gcn import VanillaGCN
+from torch_geometric.loader import DataLoader
 import torch
 
 def main():
@@ -12,7 +13,9 @@ def main():
     with open(args.config, "r") as config_path:
         config = yaml.load(config_path, Loader=yaml.FullLoader)
 
-    data_loader = GNNDataLoader(config)
+    gnn_dataset = GNNDataset(config, mode="train")
+
+    data_loader = DataLoader(gnn_dataset, batch_size=3, shuffle=False)
     config["device"] = torch.device("cuda")
     exp_name = config["exp_name"]
     tests_episodes = config["tests_episodes"]
@@ -20,12 +23,13 @@ def main():
     msg_type = config["msg_type"]
 
     model = VanillaGCN(config)
-    for i, (states, trajectories, gso) in enumerate(data_loader.train_loader):
-        states = states.to(config["device"])
-        trajectories = trajectories.to(config["device"])
-        gso = gso.to(config["device"])
-        output = model(states, gso)
+    for i, (data) in enumerate(data_loader):
+        output = model(data)
         break
+
+    # print(f"Compress Features Dim {model.encoder_output_dim}")
+    # print(f"Feature Dim: {model.feature_dim}")
+
 
 if __name__ == "__main__":
     main()

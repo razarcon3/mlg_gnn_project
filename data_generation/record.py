@@ -42,9 +42,7 @@ def record_env(path, cases, config):
 
     trajectory = None
     for i in range(cases):
-        trajectory = np.load(
-            os.path.join(path, f"case_{i}", "trajectory.npy"), allow_pickle=True
-        )
+        trajectory = np.load(os.path.join(path, f"case_{i}", "trajectory.npy"), allow_pickle=True)
         t[i] = trajectory.shape[1]
 
     print(f"max steps {np.max(t)}")
@@ -90,9 +88,7 @@ def record_env(path, cases, config):
 
         np.save(os.path.join(path, f"case_{timestep}", "states.npy"), recordings)
         np.save(os.path.join(path, f"case_{timestep}", "gso.npy"), adj_record)
-        np.save(
-            os.path.join(path, f"case_{timestep}", "trajectory_record.npy"), trajectory
-        )
+        np.save(os.path.join(path, f"case_{timestep}", "trajectory_record.npy"), trajectory)
         if timestep % 25 == 0:
             print(f"Recorded -- [{timestep}/{cases}]")
     print(f"Recorded -- [{timestep+1}/{cases}] --- completed")

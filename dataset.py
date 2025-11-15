@@ -2,9 +2,8 @@ import os
 import numpy as np
 
 import torch
-from torch.utils.data import DataLoader, Dataset
-from torch_geometric.data import Data
-
+from torch_geometric.data import Data, Dataset
+from torch_geometric.loader import DataLoader
 
 # class GNNDataLoader:
 #     def __init__(self, config):
@@ -20,6 +19,16 @@ from torch_geometric.data import Data
 #             pin_memory=True,
 #         )
 
+class GNNDataObject(Data):
+    def __init__(self, states, edge_index, comm_graph=None, gt_action=None, **kwargs):
+        super().__init__(**kwargs)
+        self.state = states
+        self.gt_action = gt_action
+        self.comm_graph = comm_graph
+        self.edge_index = edge_index
+        self.num_nodes = states.shape[0]
+
+
 class GNNDataset(Dataset):
     def __init__(self, config, mode):
         """
@@ -27,6 +36,7 @@ class GNNDataset(Dataset):
             dir_path (string): Path to the directory with the cases.
             A case dir contains the states and trajectories of the agents
         """
+        super().__init__()
         self.config = config[mode]
         self.dir_path = self.config["root_dir"]
         if mode == "valid":
@@ -83,7 +93,6 @@ class GNNDataset(Dataset):
                     state.shape[0] == tray.shape[1]
                 ), f"(before transform) Missmatch between states and trajectories: {state.shape[0]} != {tray.shape[1]}"
                 self.states[i, :, :, :, :, :] = state
-                self.trajectories[i, :, :] = tray.reshape((self.config["max_time"], self.config["nb_agents"]))
                 self.trajectories[i, :, :] = tray.T
                 self.gsos[i, :, :, :] = gso
                 self.count += 1
@@ -109,7 +118,7 @@ class GNNDataset(Dataset):
     def __len__(self):
         return self.count
 
-    def __getitem__(self, index) -> Data:
+    def __getitem__(self, index) -> GNNDataObject:
         """
         Returns 1 sample (1 timestep in a case)
         d: Data object
@@ -122,14 +131,12 @@ class GNNDataset(Dataset):
         d.state = states
         d.gt_action = gt_action
         d.comm_graph = comm_graph
+        d.num_nodes = gt_action.shape[0]
 
         edge_index = comm_graph.nonzero(as_tuple=False).t().contiguous()
         d.edge_index = edge_index
 
         return d
-
-    # def device(self, device):
-    #     self.to(device)
 
 
 if __name__ == "__main__":
@@ -146,6 +153,12 @@ if __name__ == "__main__":
 
     dataset = GNNDataset(config, mode="train")
     sample = dataset[0]
+
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=False)
+
+    batch = next(iter(dataloader))
+
+    print(len(batch))
 
     # data_loader = GNNDataLoader(config)
     # print(data_loader.train_loader)
