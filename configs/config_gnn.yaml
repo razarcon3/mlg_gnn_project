@@ -16,6 +16,8 @@ node_dims: [128]
 # Policy MLP
 action_layers: 1
 
+device: "cuda"
+
 # Training
 epochs: 5
 tests_episodes: 100
