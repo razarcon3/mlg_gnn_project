@@ -3,6 +3,8 @@ from typing import Any
 
 from torch import nn
 from torch_geometric.nn.models import GCN
+from torch_geometric.nn import ChebConv
+from torch_geometric.nn import Sequential
 
 
 class VanillaGCN(nn.Module):
@@ -32,12 +34,29 @@ class VanillaGCN(nn.Module):
 
         # Initialize GCN
         self.GCN = GCN(in_channels=self.encoder_output_dim, num_layers=self.graph_filters, out_channels=self.node_dim, hidden_channels=self.node_dim).to(config["device"])
+        self._init_gnn()
 
         # Initialize action decoder
         self.action_decoder = nn.Sequential(
             nn.Linear(self.node_dim, self.num_actions),
             nn.ReLU(),
         ).to(config["device"])
+
+    def _init_gnn(self):
+        feature_sizes = [self.encoder_output_dim] + [self.node_dim] * self.graph_filters
+
+        modules = []
+        for i in range(self.graph_filters):
+            modules.append((ChebConv(
+                in_channels=feature_sizes[i],
+                out_channels=feature_sizes[i + 1],
+                normalization='sym',
+                K=3,
+            ), 'x, edge_index -> x'))
+            modules.append(nn.ReLU(inplace=True))
+
+        self.gnn = Sequential('x, edge_index', modules)
+
 
     def _init_encoder(self):
         self.conv_dim_W = [self.map_shape[0]]
@@ -86,7 +105,7 @@ class VanillaGCN(nn.Module):
         state, edge_index = data.state, data.edge_index
         feature_vector = self.feature_encoder(state.to(self.config["device"])) # Agents (batched), encoder output dim
 
-        shared_features = self.GCN(feature_vector, edge_index.to(self.config["device"]))
+        shared_features = self.gnn(feature_vector, edge_index.to(self.config["device"]))
 
         action_logits = self.action_decoder(shared_features)
         return action_logits

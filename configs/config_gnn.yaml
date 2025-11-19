@@ -17,7 +17,7 @@ node_dims: [128]
 action_layers: 1
 
 # Training
-epochs: 100
+epochs: 5
 tests_episodes: 100
 net_type: 'gnn'
 msg_type: 'gcn'
